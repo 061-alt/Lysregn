@@ -3,365 +3,517 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Lumi Walk | Nordic Weather</title>
+    <title>Lumi Walk | 北欧の冒険</title>
     
-    <!-- CDNs -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Noto+Sans+JP:wght@300;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Montserrat:wght@400;500;700&family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet">
 
     <style>
         :root {
-            --nordic-bg: #F8F9FA;
-            --nordic-text: #2D3436;
-            --nordic-accent: #81ECEC;
-            --card-bg: rgba(255, 255, 255, 0.9);
-            --transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            /* Nordic Minimalist Palette - Refined & Muted */
+            --background: #FDFBF7; /* Cream */
+            --background-alt: #E0E0E0; /* Light Gray */
+            --forest-green: #2D4B41;
+            --icy-blue: #C4D4D1;
+            --terracotta: #BC8F8F;
+            --warm-wood: #C19A6B;
+            --charcoal: #2A2A2A;
+            --midnight: #1A1C22;
+            --moonlight: #E2C275;
+            
+            --primary: var(--forest-green);
+            --secondary: var(--icy-blue);
+            --accent: var(--warm-wood);
+            --text: var(--charcoal);
         }
-
-        /* Rain Mode Colors */
-        .rain-mode {
-            --nordic-bg: #4A4A4A;
-            --nordic-text: #F8F9FA;
-            --nordic-accent: #00CEC9;
-            --card-bg: rgba(60, 60, 60, 0.85);
-        }
-
-        /* Snow Mode Colors */
-        .snow-mode {
-            --nordic-bg: #E0F7FA;
-            --nordic-text: #00838F;
-            --nordic-accent: #00ACC1;
-            --card-bg: rgba(255, 255, 255, 0.9);
-        }
-
+        
         body {
-            font-family: 'Inter', 'Noto Sans JP', sans-serif;
-            background-color: var(--nordic-bg);
-            color: var(--nordic-text);
-            transition: var(--transition);
+            font-family: 'Zen Maru Gothic', 'Montserrat', sans-serif;
+            background-color: var(--background);
+            color: var(--text);
+            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
             overflow-x: hidden;
-            margin: 0;
-            min-height: 100vh;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        /* Weather Overlays */
-        .weather-overlay {
-            position: fixed;
-            inset: 0;
-            pointer-events: none;
-            z-index: 10;
-            opacity: 0;
-            transition: opacity 1s ease;
-        }
-
-        .active-weather { opacity: 1; }
-
-        /* Rain Animation */
-        .rain-drop {
-            position: absolute;
-            background-color: rgba(255, 255, 255, 0.2);
-            width: 1px;
-            height: 20px;
-            animation: fall linear infinite;
-        }
-
-        @keyframes fall {
-            to { transform: translateY(100vh); }
-        }
-
-        /* Snow Animation */
-        .snowflake {
-            position: absolute;
-            background-color: white;
-            border-radius: 50%;
-            opacity: 0.8;
-            animation: snow-fall linear infinite;
-        }
-
-        @keyframes snow-fall {
-            to { transform: translateY(100vh) translateX(20px); }
-        }
-
-        /* UI Elements */
+        /* 幾何学的で洗練されたカードデザイン */
         .card-bg {
-            background: var(--card-bg);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(0,0,0,0.05);
-            border-radius: 24px;
-            transition: var(--transition);
+            background-color: white;
+            border-radius: 2rem;
+            border: 1px solid rgba(0,0,0,0.03);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.02);
+            transition: transform 0.3s ease;
         }
 
         #map-wrapper {
             width: 100%;
-            height: 45vh;
-            border-radius: 32px;
+            height: 40vh;
             overflow: hidden;
+            border-radius: 2rem;
+            position: relative;
+            border: 8px solid white;
             box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-            border: 4px solid white;
-            z-index: 1;
+            z-index: 10;
+        }
+        
+        #map { width: 100%; height: 100%; transition: transform 0.4s ease-out; }
+
+        /* タブ */
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.5s ease-out; }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
-        #map { width: 100%; height: 100%; }
-
-        .weather-btn {
-            padding: 8px;
-            border-radius: 12px;
-            transition: all 0.3s ease;
-            opacity: 0.5;
+        /* 深夜モード */
+        .midnight-mode {
+            background-color: var(--midnight) !important;
+            color: #F0F0F0 !important;
         }
-        .weather-btn.active {
-            opacity: 1;
-            background: rgba(255,255,255,0.2);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        .midnight-mode .card-bg {
+            background-color: #252833 !important;
+            color: #F0F0F0 !important;
+            border-color: rgba(255,255,255,0.05);
         }
-
-        /* Illustration Area */
-        #illustration-container {
-            height: 120px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-bottom: 1rem;
+        .midnight-mode .leaflet-tile-pane {
+            filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
         }
 
-        .nordic-svg {
-            max-height: 100%;
-            width: auto;
-            transition: all 0.5s ease;
+        /* 虚無の冒険 (旧崩壊モード) */
+        .collapse-mode {
+            background-color: #1A1A1A !important;
+            color: var(--icy-blue) !important;
+        }
+        .collapse-mode .card-bg {
+            background-color: #2D2D2D !important;
+            color: var(--icy-blue) !important;
+            border-color: rgba(255,255,255,0.05);
+        }
+        .collapse-mode .leaflet-tile-pane {
+            filter: sepia(1) saturate(0.5) brightness(0.8) contrast(1.2) !important;
         }
 
-        /* Leaflet Filter */
-        .rain-mode .leaflet-tile-pane { filter: brightness(0.6) saturate(0.8) contrast(1.1); }
-        .snow-mode .leaflet-tile-pane { filter: brightness(1.1) saturate(0.5) hue-rotate(180deg); }
+        /* ゲージ */
+        .gauge-container {
+            height: 8px;
+            background: rgba(0,0,0,0.05);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .gauge-fill {
+            height: 100%;
+            background: var(--primary);
+            transition: width 1s ease-in-out;
+        }
+
+        /* 天気モード */
+        body.rain-mode { background-color: var(--Midnight) !important; color: white !important; }
+        body.rain-mode .card-bg { background-color: #2D2D2D !important; color: white !important; }
+        
+        body.snow-mode { background-color: var(--background-alt) !important; color: var(--forest-green) !important; }
+        body.snow-mode .card-bg { background-color: white !important; color: var(--forest-green) !important; }
     </style>
 </head>
-<body>
+<body class="pb-32 min-h-screen">
 
-    <!-- Weather Overlays -->
-    <div id="rain-overlay" class="weather-overlay"></div>
-    <div id="snow-overlay" class="weather-overlay"></div>
-
-    <!-- Header -->
-    <header class="p-6 flex justify-between items-center sticky top-0 z-[100] backdrop-blur-md">
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center shadow-sm">
-                <i data-lucide="wind" class="text-nordic-text"></i>
+    <div id="geo-overlay" class="fixed inset-0 z-[2000] bg-midnight flex flex-col items-center justify-center p-8 text-white text-center">
+        <div class="mb-8 relative">
+            <i data-lucide="navigation" class="w-20 h-20 text-moonlight animate-pulse"></i>
+            <div class="absolute -bottom-2 -right-2 bg-white rounded-full p-2 text-midnight">
+                <i data-lucide="search" class="w-5 h-5"></i>
             </div>
-            <h1 class="text-xl font-semibold tracking-tight">Lumi Walk</h1>
         </div>
+        <h2 class="text-3xl font-bold mb-4">直感ナビを起動中...</h2>
+        <p class="text-white/60 mb-10 text-lg">位置情報とセンサーを許可してください！</p>
+        <button id="retry-btn" class="hidden px-12 py-5 bg-moonlight text-midnight rounded-full font-bold text-xl shadow-2xl active:scale-95 transition-transform">再試行する</button>
+    </div>
 
-        <div class="flex items-center gap-1 bg-black/5 p-1 rounded-2xl border border-white/10">
-            <button onclick="changeWeather('default')" id="btn-sunny" class="weather-btn active">
-                <i data-lucide="sun" size="20"></i>
-            </button>
-            <button onclick="changeWeather('rain')" id="btn-rain" class="weather-btn">
-                <i data-lucide="cloud-rain" size="20"></i>
-            </button>
-            <button onclick="changeWeather('snow')" id="btn-snow" class="weather-btn">
-                <i data-lucide="snowflake" size="20"></i>
-            </button>
+    <div id="nav-step-card" class="fixed top-4 left-4 right-4 p-5 rounded-[2rem] shadow-xl flex items-center gap-4 bg-white card-bg transition-transform duration-500 -translate-y-[150%] z-[1000]">
+        <div id="nav-arrow-box" class="w-16 h-16 rounded-2xl bg-secondary text-white flex items-center justify-center">
+            <i data-lucide="arrow-up" size="32" id="nav-arrow-icon"></i>
+        </div>
+        <div class="flex-1">
+            <div class="flex items-end gap-1 mb-1">
+                <span id="nav-dist" class="text-2xl font-bold leading-none">---m</span>
+                <span class="text-[10px] font-bold opacity-40 uppercase tracking-widest pb-1">直進</span>
+            </div>
+            <p id="nav-instruction" class="text-lg font-bold leading-tight opacity-80">目的地を設定中...</p>
+        </div>
+        <button onclick="stopNavigation()" class="p-2 opacity-20 hover:opacity-100"><i data-lucide="x-circle"></i></button>
+    </div>
+
+    <header class="p-6 flex justify-between items-center sticky top-0 z-50 backdrop-blur-md border-b border-black/5">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
+                <i data-lucide="sparkles"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold tracking-tight">Lumi Walk</h1>
+                <p class="text-[10px] uppercase tracking-widest opacity-40">Nordic Journey</p>
+            </div>
+        </div>
+        <div class="flex gap-2">
+            <div class="flex gap-1">
+                <button onclick="applyWeatherEffects('default')" class="p-3 rounded-full text-gray-300"><i data-lucide="sun" size="18"></i></button>
+                <button onclick="applyWeatherEffects('rain')" class="p-3 rounded-full text-gray-300"><i data-lucide="cloud-rain" size="18"></i></button>
+                <button onclick="applyWeatherEffects('snow')" class="p-3 rounded-full text-gray-300"><i data-lucide="cloud-snow" size="18"></i></button>
+            </div>
+            <button id="skull-btn" class="p-3 rounded-full text-gray-300"><i data-lucide="skull" size="20"></i></button>
+            <button onclick="toggleMidnight()" class="p-3 rounded-full bg-secondary text-white shadow-lg"><i data-lucide="moon" size="20" id="mode-icon"></i></button>
         </div>
     </header>
 
-    <main class="max-w-md mx-auto px-6 pb-24">
+    <main class="max-w-2xl mx-auto px-6 pt-4 space-y-8">
         
-        <!-- Illustration Area -->
-        <div id="illustration-container">
-            <!-- Dynamic SVG will be injected here -->
-        </div>
+        <section id="tab-planner" class="tab-content active space-y-6">
+            <div id="map-wrapper">
+                <div id="map"></div>
+                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[500] pointer-events-none">
+                    <div class="w-8 h-8 bg-secondary rounded-full border-4 border-white shadow-lg flex items-center justify-center relative">
+                        <i data-lucide="navigation" class="text-white w-4 h-4"></i>
+                    </div>
+                </div>
+            </div>
 
-        <!-- Map Section -->
-        <div id="map-wrapper" class="mb-8">
-            <div id="map"></div>
-        </div>
+            <div class="p-8 card-bg space-y-6">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-lg font-bold flex items-center gap-2"><i data-lucide="clock" class="text-primary"></i> 散歩の時間</h2>
+                    <span class="text-2xl font-bold text-secondary" id="time-display">30分</span>
+                </div>
+                <input type="range" min="30" max="120" step="15" value="30" id="time-range" class="w-full accent-[#4A6A80]">
+                
+                <div id="route-summary" class="pt-6 border-t border-black/5 flex justify-between items-end">
+                    <div class="space-y-1">
+                        <p class="text-sm opacity-50 font-bold uppercase tracking-widest">現在のルート</p>
+                        <h3 id="route-name" class="text-xl font-bold">目的地を取得中...</h3>
+                    </div>
+                    <button onclick="startFullRoute()" class="w-16 h-16 rounded-2xl bg-primary text-white shadow-xl flex items-center justify-center active:scale-95 transition-transform">
+                        <i data-lucide="play" fill="currentColor"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
 
-        <!-- Stats Card -->
-        <div class="card-bg p-6 mb-6">
-            <div class="flex justify-between items-center mb-4">
-                <span class="text-xs font-semibold uppercase tracking-widest opacity-50">Current Walk</span>
-                <span id="weather-label" class="text-xs font-bold px-3 py-1 rounded-full bg-nordic-accent/20 text-nordic-accent">Sunny</span>
+        <section id="tab-quest" class="tab-content space-y-6">
+            <div class="flex justify-between items-center">
+                <h2 class="text-xl font-bold">近くのスポット</h2>
+                <span class="px-4 py-1 bg-primary/10 text-primary rounded-full text-xs font-bold" id="quest-count">0 達成</span>
             </div>
-            <div class="flex items-end gap-2">
-                <span class="text-4xl font-light" id="dist-val">0.00</span>
-                <span class="text-sm font-medium opacity-60 mb-1">km</span>
-            </div>
-        </div>
+            <div id="poi-list" class="space-y-3"></div>
+        </section>
 
-        <!-- Navigation Placeholder -->
-        <div class="card-bg p-6 flex items-center gap-4">
-            <div class="w-12 h-12 rounded-2xl bg-nordic-accent/10 flex items-center justify-center text-nordic-accent">
-                <i data-lucide="navigation"></i>
+        <section id="tab-profile" class="tab-content space-y-6">
+            <div class="p-8 card-bg flex items-center gap-6">
+                <div class="w-20 h-20 rounded-full bg-text flex items-center justify-center text-white relative">
+                    <i data-lucide="cat" size="36"></i>
+                    <div id="cat-heart" class="hidden absolute -top-1 -right-1 text-red-400 animate-bounce"><i data-lucide="heart" fill="currentColor"></i></div>
+                </div>
+                <div class="flex-1">
+                    <p class="text-[10px] font-bold opacity-40 uppercase tracking-widest">旅の仲間</p>
+                    <h3 class="text-xl font-bold" id="cat-status">黒猫が見守っている</h3>
+                    <div class="mt-2 space-y-1">
+                        <div class="flex justify-between text-[10px] font-bold opacity-40">
+                            <span>親密度 (累計 <span id="total-dist">0.0</span>km)</span>
+                        </div>
+                        <div class="gauge-container"><div id="cat-gauge" class="gauge-fill" style="width: 0%"></div></div>
+                    </div>
+                </div>
             </div>
-            <div>
-                <p class="text-sm font-semibold">Next Destination</p>
-                <p class="text-xs opacity-50">Nordic Park Entrance</p>
+            
+            <div id="weather-artwork-container" class="p-8 card-bg space-y-4 text-center">
+                <p class="text-sm opacity-50">上の天気ボタンを押すと景色が変わります</p>
             </div>
-        </div>
+            
+        </section>
     </main>
 
+    <nav class="fixed bottom-0 left-0 right-0 p-6 bg-white/80 backdrop-blur-xl border-t border-black/5 z-[100] card-bg">
+        <div class="max-w-md mx-auto flex justify-around">
+            <button onclick="switchTab('planner')" class="flex flex-col items-center gap-1 text-secondary" id="btn-planner">
+                <i data-lucide="map"></i><span class="text-[10px] font-bold">散歩</span>
+            </button>
+            <button onclick="switchTab('quest')" class="flex flex-col items-center gap-1 opacity-30" id="btn-quest">
+                <i data-lucide="map-pin"></i><span class="text-[10px] font-bold">スポット</span>
+            </button>
+            <button onclick="switchTab('profile')" class="flex flex-col items-center gap-1 opacity-30" id="btn-profile">
+                <i data-lucide="book"></i><span class="text-[10px] font-bold">記録</span>
+            </button>
+        </div>
+    </nav>
+
     <script>
-        // --- State Management ---
+        // --- State (lumi-walk専用) ---
         let state = {
-            weather: localStorage.getItem('lumi-walk-weather') || 'default',
-            snowStartTime: null,
-            distance: 0,
+            isMidnight: false,
+            isCollapse: false,
+            activeTab: 'planner',
+            plannedTime: 30,
+            userLocation: null,
+            heading: 0,
+            pois: [],
+            stamps: JSON.parse(localStorage.getItem('lumi-walk-stamps') || '[]'),
+            totalDistance: parseFloat(localStorage.getItem('lumi-walk-total-dist') || '0'),
             map: null,
-            userMarker: null,
-            snowInterval: null
+            routeLine: null,
+            isNavigating: false,
+            suggestedRoute: [],
+            currentStepIndex: 0,
+            currentRouteSteps: [],
+            poiMarkers: [],
+            catMarker: null,
+            lastLocation: null,
+            weather: 'default',
+            snowStartTime: null
         };
 
-        // --- Weather Visuals (SVGs) ---
-        const SVGS = {
-            sunny: `
-                <svg class="nordic-svg" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="50" cy="50" r="20" stroke="currentColor" stroke-width="2" stroke-dasharray="4 4"/>
-                    <path d="M50 10V20M50 80V90M10 50H20M80 50H90" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                </svg>
-            `,
-            rain: `
-                <svg class="nordic-svg" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <!-- Hydrangea -->
-                    <circle cx="40" cy="70" r="15" fill="#81ECEC" fill-opacity="0.3" stroke="#00CEC9" stroke-width="1"/>
-                    <circle cx="50" cy="75" r="12" fill="#81ECEC" fill-opacity="0.3" stroke="#00CEC9" stroke-width="1"/>
-                    <!-- Frog -->
-                    <rect x="65" y="65" width="15" height="20" rx="7" fill="#55E6C1" stroke="#2D3436" stroke-width="1.5"/>
-                    <circle cx="70" cy="65" r="3" fill="#2D3436"/>
-                    <circle cx="75" cy="65" r="3" fill="#2D3436"/>
-                    <!-- Umbrella -->
-                    <path d="M60 65L72.5 45L85 65H60Z" fill="none" stroke="#2D3436" stroke-width="1.5"/>
-                    <path d="M72.5 45V65" stroke="#2D3436" stroke-width="1.5"/>
-                </svg>
-            `,
-            snow: [
-                // Stage 1
-                `<svg class="nordic-svg" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="50" cy="80" r="15" stroke="currentColor" stroke-width="1.5"/>
-                </svg>`,
-                // Stage 2
-                `<svg class="nordic-svg" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="50" cy="80" r="15" stroke="currentColor" stroke-width="1.5"/>
-                    <circle cx="50" cy="55" r="10" stroke="currentColor" stroke-width="1.5"/>
-                </svg>`,
-                // Stage 3
-                `<svg class="nordic-svg" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="50" cy="80" r="15" stroke="currentColor" stroke-width="1.5"/>
-                    <circle cx="50" cy="55" r="10" stroke="currentColor" stroke-width="1.5"/>
-                    <circle cx="47" cy="53" r="1" fill="currentColor"/>
-                    <circle cx="53" cy="53" r="1" fill="currentColor"/>
-                    <path d="M50 55L55 56" stroke="#E67E22" stroke-width="2" stroke-linecap="round"/>
-                    <path d="M40 55L30 45M60 55L70 45" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                </svg>`
-            ]
-        };
+        const WALKING_SPEED_KMH = 4.5;
 
-        // --- Core Functions ---
+        // --- Init ---
         function init() {
             lucide.createIcons();
             initMap();
-            changeWeather(state.weather);
+            setupLocation();
+            setupOrientation();
+            setupCollapseTrigger();
+            applyWeatherEffects('default');
             
-            // Start tracking
-            navigator.geolocation.watchPosition(updatePosition, null, { enableHighAccuracy: true });
+            document.getElementById('time-range').oninput = (e) => {
+                state.plannedTime = parseInt(e.target.value);
+                document.getElementById('time-display').innerText = `${state.plannedTime}分`;
+                calculateRoute();
+            };
         }
 
         function initMap() {
-            state.map = L.map('map', { zoomControl: false, attributionControl: false }).setView([35.6895, 139.6917], 15);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(state.map);
-            
-            state.userMarker = L.circleMarker([35.6895, 139.6917], {
-                radius: 10,
-                fillColor: "#81ECEC",
-                color: "white",
-                weight: 3,
-                fillOpacity: 1
-            }).addTo(state.map);
+            state.map = L.map('map', { zoomControl: false, attributionControl: false }).setView([35.6895, 139.6917], 16);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(state.map);
         }
 
-        function updatePosition(pos) {
-            const { latitude, longitude } = pos.coords;
-            state.map.panTo([latitude, longitude]);
-            state.userMarker.setLatLng([latitude, longitude]);
-        }
-
-        function changeWeather(type) {
-            state.weather = type;
-            localStorage.setItem('lumi-walk-weather', type);
-            
-            // UI Updates
-            document.body.className = type === 'default' ? '' : `${type}-mode`;
-            document.querySelectorAll('.weather-btn').forEach(btn => btn.classList.remove('active'));
-            document.getElementById(`btn-${type === 'default' ? 'sunny' : type}`).classList.add('active');
-            document.getElementById('weather-label').innerText = type.charAt(0).toUpperCase() + type.slice(1);
-
-            // Overlay Management
-            document.getElementById('rain-overlay').classList.toggle('active-weather', type === 'rain');
-            document.getElementById('snow-overlay').classList.toggle('active-weather', type === 'snow');
-
-            if (type === 'rain') createRain();
-            if (type === 'snow') {
-                state.snowStartTime = Date.now();
-                createSnow();
-                startSnowmanProgression();
-            } else {
-                clearInterval(state.snowInterval);
+        function setupOrientation() {
+            if (window.DeviceOrientationEvent) {
+                window.addEventListener('deviceorientation', (e) => {
+                    let heading = e.webkitCompassHeading || (e.alpha ? 360 - e.alpha : 0);
+                    state.heading = heading;
+                    const mapEl = document.getElementById('map');
+                    if (mapEl && state.isNavigating) { mapEl.style.transform = `rotate(${-state.heading}deg)`; }
+                });
             }
+        }
 
-            updateIllustration();
+        function setupLocation() {
+            const overlay = document.getElementById('geo-overlay');
+            const retryBtn = document.getElementById('retry-btn');
+            
+            navigator.geolocation.watchPosition(pos => {
+                const current = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                if (state.isNavigating && state.userLocation) {
+                    const d = getDistance(state.userLocation.lat, state.userLocation.lng, current.lat, current.lng);
+                    if (d > 0.005) {
+                        state.totalDistance += d;
+                        localStorage.setItem('lumi-walk-total-dist', state.totalDistance.toFixed(3));
+                    }
+                }
+                state.userLocation = current;
+                if (overlay) overlay.classList.add('hidden');
+                if (!state.isNavigating) state.map.setView([current.lat, current.lng]);
+                if (state.pois.length === 0) fetchPOIs();
+                updateUI();
+                if (state.isNavigating) updateNavigation();
+            }, () => {
+                if (retryBtn) retryBtn.classList.remove('hidden');
+            }, { enableHighAccuracy: true });
+        }
+
+        async function fetchPOIs() {
+            if (!state.userLocation) return;
+            const { lat, lng } = state.userLocation;
+            // カフェだけでなく、神社や公園も含めてスポットを取得
+            const query = `[out:json];(node["amenity"~"cafe|place_of_worship"](around:2000,${lat},${lng});node["leisure"="park"](around:2000,${lat},${lng}););out;`;
+            try {
+                const res = await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`);
+                const data = await res.json();
+                state.pois = data.elements.map(el => ({
+                    id: el.id, name: el.tags.name || "謎のスポット", lat: el.lat, lng: el.lon,
+                    dist: getDistance(lat, lng, el.lat, el.lon)
+                })).sort((a, b) => a.dist - b.dist);
+                calculateRoute();
+                updateUI();
+            } catch (e) { console.error(e); }
+        }
+
+        function calculateRoute() {
+            if (state.pois.length < 2) return;
+            const count = Math.min(Math.floor(state.plannedTime / 20) + 1, 4);
+            const route = state.pois.slice(0, count).concat([{...state.userLocation, name: "出発地点", isGoal: true}]);
+            
+            state.suggestedRoute = route;
+            state.poiMarkers.forEach(m => state.map.removeLayer(m));
+            state.poiMarkers = state.suggestedRoute.map((p, i) => {
+                return L.circleMarker([p.lat, p.lng], { radius: 8, fillColor: 'var(--primary)', color: '#fff', weight: 3, fillOpacity: 0.8 }).addTo(state.map);
+            });
+            document.getElementById('route-name').innerText = `${state.plannedTime}分の散歩ルート`;
+        }
+
+        async function startFullRoute() {
+            state.isNavigating = true;
+            state.currentStepIndex = 0;
+            await fetchNextLeg();
+            document.getElementById('nav-step-card').style.transform = "translateY(0)";
+            speak("Lumi Walkを開始します。最初の目的地へ向かいましょう。");
+        }
+
+        async function fetchNextLeg() {
+            const start = state.currentStepIndex === 0 ? state.userLocation : state.suggestedRoute[state.currentStepIndex - 1];
+            const end = state.suggestedRoute[state.currentStepIndex];
+            const profile = 'walking';
+            const url = `https://router.project-osrm.org/route/v1/${profile}/${start.lng},${start.lat};${end.lng},${end.lat}?overview=full&geometries=geojson&steps=true`;
+            const res = await fetch(url);
+            const data = await res.json();
+            if (state.routeLine) state.map.removeLayer(state.routeLine);
+            state.routeLine = L.geoJSON(data.routes[0].geometry, { style: { color: 'var(--secondary)', weight: 8, opacity: 0.6 } }).addTo(state.map);
+            state.currentRouteSteps = data.routes[0].legs[0].steps;
+        }
+
+        function updateNavigation() {
+            if (!state.currentRouteSteps.length) return;
+            const next = state.currentRouteSteps[0];
+            const d = Math.round(getDistance(state.userLocation.lat, state.userLocation.lng, next.maneuver.location[1], next.maneuver.location[0]) * 1000);
+            document.getElementById('nav-dist').innerText = `${d}m`;
+            document.getElementById('nav-instruction').innerText = next.name || "道なりに進む";
+            if (d < 15) {
+                state.currentRouteSteps.shift();
+                if (next.maneuver.type === 'arrive') handleArrive();
+            }
+        }
+
+        function handleArrive() {
+            const poi = state.suggestedRoute[state.currentStepIndex];
+            speak(`${poi.name}に到着。スポットを記録しました！`);
+            if (!state.stamps.includes(poi.id)) {
+                state.stamps.push(poi.id);
+                localStorage.setItem('lumi-walk-stamps', JSON.stringify(state.stamps));
+            }
+            if (state.currentStepIndex < state.suggestedRoute.length - 1) {
+                state.currentStepIndex++;
+                fetchNextLeg();
+            } else {
+                stopNavigation();
+                speak("すべてのスポットを巡りました。お疲れ様でした。");
+            }
+            updateUI();
+        }
+
+        function stopNavigation() {
+            state.isNavigating = false;
+            document.getElementById('nav-step-card').style.transform = "translateY(-150%)";
+            if (state.routeLine) state.map.removeLayer(state.routeLine);
+        }
+
+        function updateUI() {
+            document.getElementById('total-dist').innerText = state.totalDistance.toFixed(1);
+            document.getElementById('cat-gauge').style.width = `${Math.min(state.totalDistance * 10, 100)}%`;
+            document.getElementById('cat-heart').classList.toggle('hidden', state.totalDistance < 5);
+            document.getElementById('quest-count').innerText = `${state.stamps.length} 達成`;
+
+            const poiList = document.getElementById('poi-list');
+            poiList.innerHTML = '';
+            state.pois.slice(0, 10).forEach(p => {
+                const done = state.stamps.includes(p.id);
+                const div = document.createElement('div');
+                div.className = `p-4 card-bg flex justify-between items-center ${done ? 'opacity-40' : ''}`;
+                div.innerHTML = `<div><h4 class="font-bold">${p.name}</h4><p class="text-[10px] opacity-40">${p.dist.toFixed(2)}km</p></div>
+                                 <i data-lucide="${done ? 'check-circle' : 'circle'}" class="${done ? 'text-primary' : 'opacity-20'}"></i>`;
+                poiList.appendChild(div);
+            });
             lucide.createIcons();
         }
 
-        function createRain() {
-            const container = document.getElementById('rain-overlay');
+        function switchTab(tab) {
+            state.activeTab = tab;
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.getElementById(`tab-${tab}`).classList.add('active');
+            document.querySelectorAll('nav button').forEach(b => b.classList.add('opacity-30'));
+            document.getElementById(`btn-${tab}`).classList.remove('opacity-30');
+        }
+
+        function toggleMidnight() {
+            state.isMidnight = !state.isMidnight;
+            if (state.isMidnight) state.isCollapse = false;
+            document.body.classList.toggle('midnight-mode', state.isMidnight);
+            updateUI();
+        }
+
+        function setupCollapseTrigger() {
+            const skullBtn = document.getElementById('skull-btn');
+            if (skullBtn) {
+                let skullTimer;
+                skullBtn.onmousedown = skullBtn.ontouchstart = () => { skullTimer = setTimeout(() => enterCollapseMode(), 2000); };
+                skullBtn.onmouseup = skullBtn.ontouchend = () => clearTimeout(skullTimer);
+            }
+        }
+
+        function enterCollapseMode() {
+            state.isCollapse = !state.isCollapse;
+            if (state.isCollapse) { state.isMidnight = false; speak("虚無の散歩を開始します。"); }
+            document.body.classList.toggle('collapse-mode', state.isCollapse);
+            updateUI();
+        }
+
+        // Refined Nordic Folk-Art Weather Illustrations (アマガエルと雪だるま)
+        const SVGS = {
+            rain: '<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="2"><path d="M50 30 V80 M30 50 A 20 20 0 0 1 70 50" stroke="var(--forest-green)" stroke-opacity="0.2"/><path d="M30 60 A 10 10 0 0 1 70 60 L 50 80 Z" fill="var(-- Midnight)"/><circle cx="30" cy="50" r="5" fill="var(--terracotta)"/><rect x="25" y="45" width="10" height="10" fill="var(--terracotta)" fill-opacity="0.2"/><circle cx="70" cy="50" r="5" fill="red"/><rect x="65" y="45" width="10" height="10" fill="red" fill-opacity="0.2"/></svg>',
+            snow: [
+                '<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="2"><circle cx="50" cy="70" r="25" fill="white"/><path d="M50 45 L 60 40 L 50 35 L 40 40 Z" fill="var(--terracotta)"/></svg>',
+                '<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="2"><circle cx="50" cy="75" r="20" fill="white"/><circle cx="50" cy="45" r="15" fill="white"/><path d="M50 30 L 60 25 L 50 20 L 40 25 Z" fill="var(--terracotta)"/></svg>',
+                '<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="2"><circle cx="50" cy="80" r="15" fill="white"/><circle cx="50" cy="55" r="10" fill="white"/><circle cx="50" cy="35" r="5" fill="white"/><path d="M50 30 L 60 25 L 50 20 L 40 25 Z" fill="var(--terracotta)"/></svg>'
+            ]
+        };
+
+        function applyWeatherEffects(type) {
+            state.weather = type;
+            document.body.classList.remove('rain-mode', 'snow-mode');
+            const container = document.getElementById('weather-artwork-container');
             container.innerHTML = '';
-            for (let i = 0; i < 60; i++) {
-                const drop = document.createElement('div');
-                drop.className = 'rain-drop';
-                drop.style.left = Math.random() * 100 + 'vw';
-                drop.style.animationDuration = (Math.random() * 0.5 + 0.5) + 's';
-                drop.style.animationDelay = Math.random() * 2 + 's';
-                container.appendChild(drop);
+            
+            if (type === 'rain') {
+                document.body.classList.add('rain-mode');
+                container.innerHTML = `<h3 class="font-bold">雨の静寂</h3><div class="w-24 h-24 mx-auto">${SVGS.rain}</div>`;
+            } else if (type === 'snow') {
+                document.body.classList.add('snow-mode');
+                state.snowStartTime = Date.now();
+                updateSnowman();
+            } else {
+                container.innerHTML = `<p class="text-sm opacity-50">上の天気ボタンを押すと景色が変わります</p>`;
             }
         }
 
-        function createSnow() {
-            const container = document.getElementById('snow-overlay');
-            container.innerHTML = '';
-            for (let i = 0; i < 40; i++) {
-                const flake = document.createElement('div');
-                flake.className = 'snowflake';
-                const size = Math.random() * 5 + 2 + 'px';
-                flake.style.width = size;
-                flake.style.height = size;
-                flake.style.left = Math.random() * 100 + 'vw';
-                flake.style.animationDuration = (Math.random() * 3 + 2) + 's';
-                flake.style.animationDelay = Math.random() * 5 + 's';
-                container.appendChild(flake);
-            }
+        function updateSnowman() {
+            if (state.weather !== 'snow') return;
+            const elapsed = Date.now() - state.snowStartTime;
+            const container = document.getElementById('weather-artwork-container');
+            container.innerHTML = '<h3 class="font-bold">雪の冒険</h3>';
+            let stage = 0;
+            if (elapsed > 60000) stage = 2;
+            else if (elapsed > 30000) stage = 1;
+            container.innerHTML += `<div class="w-24 h-24 mx-auto">${SVGS.snow[stage]}</div>`;
+            setTimeout(updateSnowman, 30000); // 30秒ごとに更新
         }
 
-        function updateIllustration() {
-            const container = document.getElementById('illustration-container');
-            if (state.weather === 'default') {
-                container.innerHTML = SVGS.sunny;
-            } else if (state.weather === 'rain') {
-                container.innerHTML = SVGS.rain;
-            } else if (state.weather === 'snow') {
-                const elapsed = (Date.now() - state.snowStartTime) / 1000;
-                let stage = 0;
-                if (elapsed > 60) stage = 2;
-                else if (elapsed > 30) stage = 1;
-                container.innerHTML = SVGS.snow[stage];
-            }
+        function speak(t) {
+            const u = new SpeechSynthesisUtterance(t); u.lang = 'ja-JP';
+            window.speechSynthesis.cancel(); window.speechSynthesis.speak(u);
         }
 
-        function startSnowmanProgression() {
-            clearInterval(state.snowInterval);
-            state.snowInterval = setInterval(() => {
-                if (state.weather === 'snow') updateIllustration();
-            }, 5000); // Check every 5s for smooth transition
+        function getDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371;
+            const dLat = (lat2-lat1)*Math.PI/180; const dLon = (lon2-lon1)*Math.PI/180;
+            const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
         }
 
         window.onload = init;
